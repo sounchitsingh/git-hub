@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dodge the Falling Blocks Game</title>
+    <title>Simple Racing Game</title>
     <style>
         body {
             background: linear-gradient(120deg, #232526 0%, #414345 100%);
@@ -22,7 +22,7 @@
             text-shadow: 2px 2px 8px #222;
         }
         .game-area {
-            background: #fff;
+            background: #222;
             border-radius: 12px;
             box-shadow: 0 4px 24px rgba(0,0,0,0.18);
             position: relative;
@@ -31,24 +31,37 @@
             overflow: hidden;
             margin-bottom: 1.5rem;
         }
-        .player {
+        .road {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            transform: translateX(-50%);
+            width: 180px;
+            height: 100%;
+            background: #444;
+            border-left: 6px dashed #fff;
+            border-right: 6px dashed #fff;
+        }
+        .car {
             position: absolute;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            width: 50px;
-            height: 50px;
+            width: 40px;
+            height: 70px;
             background: #2d2d86;
-            border-radius: 10px;
+            border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            border: 2px solid #ffd700;
         }
-        .block {
+        .obstacle {
             position: absolute;
             width: 40px;
-            height: 40px;
+            height: 70px;
             background: #e67e22;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            border: 2px solid #fff;
         }
         .score {
             color: #fff;
@@ -94,102 +107,104 @@
     </style>
 </head>
 <body>
-    <h1>Dodge the Falling Blocks!</h1>
+    <h1>Simple Racing Game</h1>
     <div class="score" id="score">Score: 0</div>
     <div class="game-area" id="gameArea">
-        <div class="player" id="player"></div>
+        <div class="road"></div>
+        <div class="car" id="car"></div>
         <div class="game-over" id="gameOver">
             Game Over!<br>
             <span id="finalScore"></span><br>
             <button class="restart-btn" onclick="restartGame()">Restart</button>
         </div>
     </div>
-    <div class="footer">&copy; 2025 Dodge the Falling Blocks Game</div>
+    <div class="footer">&copy; 2025 Simple Racing Game</div>
     <script>
         const gameArea = document.getElementById('gameArea');
-        const player = document.getElementById('player');
+        const car = document.getElementById('car');
         const scoreDisplay = document.getElementById('score');
         const gameOverScreen = document.getElementById('gameOver');
         const finalScore = document.getElementById('finalScore');
-        let playerX = 150;
-        let playerSpeed = 7;
-        let blocks = [];
-        let blockSpeed = 3;
+        let carX = 90; // relative to road
+        let carSpeed = 8;
+        let obstacles = [];
+        let obstacleSpeed = 4;
         let score = 0;
         let gameRunning = true;
-        let blockInterval, gameLoopInterval;
+        let obstacleInterval, gameLoopInterval;
 
-        function movePlayer(e) {
+        function moveCar(e) {
             if (!gameRunning) return;
             if (e.key === 'ArrowLeft') {
-                playerX -= playerSpeed;
-                if (playerX < 0) playerX = 0;
+                carX -= carSpeed;
+                if (carX < 0) carX = 0;
             } else if (e.key === 'ArrowRight') {
-                playerX += playerSpeed;
-                if (playerX > 300) playerX = 300;
+                carX += carSpeed;
+                if (carX > 140) carX = 140;
             }
-            player.style.left = playerX + 'px';
+            car.style.left = (carX + 55) + 'px';
         }
 
-        function createBlock() {
-            const block = document.createElement('div');
-            block.classList.add('block');
-            block.style.left = Math.floor(Math.random() * 311) + 'px';
-            block.style.top = '-40px';
-            gameArea.appendChild(block);
-            blocks.push(block);
+        function createObstacle() {
+            const obstacle = document.createElement('div');
+            obstacle.classList.add('obstacle');
+            // Only spawn in road area
+            obstacle.style.left = (Math.floor(Math.random() * 4) * 35 + 55) + 'px';
+            obstacle.style.top = '-70px';
+            gameArea.appendChild(obstacle);
+            obstacles.push(obstacle);
         }
 
-        function updateBlocks() {
-            for (let i = blocks.length - 1; i >= 0; i--) {
-                const block = blocks[i];
-                let top = parseInt(block.style.top);
-                top += blockSpeed;
-                block.style.top = top + 'px';
+        function updateObstacles() {
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obs = obstacles[i];
+                let top = parseInt(obs.style.top);
+                top += obstacleSpeed;
+                obs.style.top = top + 'px';
                 // Collision detection
                 if (
-                    top + 40 >= 430 &&
-                    top + 40 <= 470 &&
-                    parseInt(block.style.left) + 40 > playerX &&
-                    parseInt(block.style.left) < playerX + 50
+                    top + 70 >= 430 &&
+                    top + 70 <= 500 &&
+                    parseInt(obs.style.left) + 40 > carX + 55 &&
+                    parseInt(obs.style.left) < carX + 55 + 40
                 ) {
                     endGame();
                 }
-                // Remove block if out of bounds
+                // Remove obstacle if out of bounds
                 if (top > 500) {
-                    block.remove();
-                    blocks.splice(i, 1);
+                    obs.remove();
+                    obstacles.splice(i, 1);
                     if (gameRunning) {
                         score++;
                         scoreDisplay.textContent = 'Score: ' + score;
                         // Increase difficulty
-                        if (score % 10 === 0) blockSpeed += 0.5;
+                        if (score % 10 === 0) obstacleSpeed += 0.5;
                     }
                 }
             }
         }
 
         function gameLoop() {
-            updateBlocks();
+            updateObstacles();
         }
 
         function startGame() {
-            playerX = 150;
-            player.style.left = playerX + 'px';
-            blocks.forEach(b => b.remove());
-            blocks = [];
-            blockSpeed = 3;
+            carX = 90;
+            car.style.left = (carX + 55) + 'px';
+            obstacles.forEach(o => o.remove());
+            obstacles = [];
+            obstacleSpeed = 4;
             score = 0;
             scoreDisplay.textContent = 'Score: 0';
             gameRunning = true;
             gameOverScreen.style.display = 'none';
-            blockInterval = setInterval(createBlock, 900);
+            obstacleInterval = setInterval(createObstacle, 900);
             gameLoopInterval = setInterval(gameLoop, 16);
         }
 
         function endGame() {
             gameRunning = false;
-            clearInterval(blockInterval);
+            clearInterval(obstacleInterval);
             clearInterval(gameLoopInterval);
             gameOverScreen.style.display = 'block';
             finalScore.textContent = 'Your Score: ' + score;
@@ -199,7 +214,7 @@
             startGame();
         }
 
-        document.addEventListener('keydown', movePlayer);
+        document.addEventListener('keydown', moveCar);
         window.onload = startGame;
     </script>
 </body>
