@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guess the Number Game</title>
+    <title>Dodge the Falling Blocks Game</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(120deg, #89f7fe 0%, #66a6ff 100%);
+            background: linear-gradient(120deg, #232526 0%, #414345 100%);
             margin: 0;
             padding: 0;
             min-height: 100vh;
@@ -15,105 +14,193 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-        }
-        .game-container {
-            background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.12);
-            padding: 2.5rem 2rem 2rem 2rem;
-            max-width: 350px;
-            width: 100%;
-            text-align: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         h1 {
-            color: #2d2d86;
+            color: #ffd700;
             margin-bottom: 1rem;
+            text-shadow: 2px 2px 8px #222;
         }
-        .instructions {
-            color: #444;
+        .game-area {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+            position: relative;
+            width: 350px;
+            height: 500px;
+            overflow: hidden;
             margin-bottom: 1.5rem;
         }
-        input[type="number"] {
-            padding: 0.5rem;
-            font-size: 1.1rem;
-            border-radius: 5px;
-            border: 1px solid #bbb;
-            width: 80px;
-            margin-right: 0.5rem;
-        }
-        button {
-            padding: 0.5rem 1.2rem;
+        .player {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 50px;
             background: #2d2d86;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .block {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: #e67e22;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        }
+        .score {
             color: #fff;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            text-shadow: 1px 1px 6px #222;
+        }
+        .footer {
+            color: #fff;
+            font-size: 0.95rem;
+            margin-top: 2rem;
+            text-shadow: 1px 1px 6px #222;
+        }
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: #ffd700;
+            padding: 2rem 2.5rem;
+            border-radius: 15px;
+            font-size: 1.5rem;
+            display: none;
+            z-index: 10;
+            text-align: center;
+        }
+        .restart-btn {
+            margin-top: 1.2rem;
+            padding: 0.5rem 1.5rem;
+            background: #ffd700;
+            color: #2d2d86;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             font-size: 1rem;
             cursor: pointer;
             transition: background 0.2s;
         }
-        button:hover {
-            background: #ffd700;
-            color: #2d2d86;
-        }
-        .message {
-            margin-top: 1.2rem;
-            font-size: 1.1rem;
-            min-height: 1.5em;
-        }
-        .score {
-            margin-top: 1.2rem;
-            color: #2d2d86;
-            font-weight: bold;
-        }
-        .footer {
-            margin-top: 2.5rem;
-            color: #222;
-            font-size: 0.95rem;
+        .restart-btn:hover {
+            background: #e67e22;
+            color: #fff;
         }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <h1>Guess the Number!</h1>
-        <div class="instructions">I'm thinking of a number between <b>1</b> and <b>100</b>.<br>Can you guess it?</div>
-        <input type="number" id="guessInput" min="1" max="100" placeholder="Enter guess">
-        <button onclick="makeGuess()">Guess</button>
-        <div class="message" id="message"></div>
-        <div class="score" id="score">Attempts: 0</div>
-        <button onclick="resetGame()" style="margin-top:1.5rem; background:#e67e22;">Restart</button>
+    <h1>Dodge the Falling Blocks!</h1>
+    <div class="score" id="score">Score: 0</div>
+    <div class="game-area" id="gameArea">
+        <div class="player" id="player"></div>
+        <div class="game-over" id="gameOver">
+            Game Over!<br>
+            <span id="finalScore"></span><br>
+            <button class="restart-btn" onclick="restartGame()">Restart</button>
+        </div>
     </div>
-    <div class="footer">&copy; 2025 Guess the Number Game</div>
+    <div class="footer">&copy; 2025 Dodge the Falling Blocks Game</div>
     <script>
-        let secretNumber = Math.floor(Math.random() * 100) + 1;
-        let attempts = 0;
-        function makeGuess() {
-            const guess = Number(document.getElementById('guessInput').value);
-            const message = document.getElementById('message');
-            attempts++;
-            document.getElementById('score').textContent = `Attempts: ${attempts}`;
-            if (!guess || guess < 1 || guess > 100) {
-                message.textContent = 'Please enter a number between 1 and 100!';
-                return;
+        const gameArea = document.getElementById('gameArea');
+        const player = document.getElementById('player');
+        const scoreDisplay = document.getElementById('score');
+        const gameOverScreen = document.getElementById('gameOver');
+        const finalScore = document.getElementById('finalScore');
+        let playerX = 150;
+        let playerSpeed = 7;
+        let blocks = [];
+        let blockSpeed = 3;
+        let score = 0;
+        let gameRunning = true;
+        let blockInterval, gameLoopInterval;
+
+        function movePlayer(e) {
+            if (!gameRunning) return;
+            if (e.key === 'ArrowLeft') {
+                playerX -= playerSpeed;
+                if (playerX < 0) playerX = 0;
+            } else if (e.key === 'ArrowRight') {
+                playerX += playerSpeed;
+                if (playerX > 300) playerX = 300;
             }
-            if (guess === secretNumber) {
-                message.textContent = `🎉 Correct! The number was ${secretNumber}.`;
-                message.style.color = '#27ae60';
-            } else if (guess < secretNumber) {
-                message.textContent = 'Too low! Try again.';
-                message.style.color = '#e67e22';
-            } else {
-                message.textContent = 'Too high! Try again.';
-                message.style.color = '#e67e22';
+            player.style.left = playerX + 'px';
+        }
+
+        function createBlock() {
+            const block = document.createElement('div');
+            block.classList.add('block');
+            block.style.left = Math.floor(Math.random() * 311) + 'px';
+            block.style.top = '-40px';
+            gameArea.appendChild(block);
+            blocks.push(block);
+        }
+
+        function updateBlocks() {
+            for (let i = blocks.length - 1; i >= 0; i--) {
+                const block = blocks[i];
+                let top = parseInt(block.style.top);
+                top += blockSpeed;
+                block.style.top = top + 'px';
+                // Collision detection
+                if (
+                    top + 40 >= 430 &&
+                    top + 40 <= 470 &&
+                    parseInt(block.style.left) + 40 > playerX &&
+                    parseInt(block.style.left) < playerX + 50
+                ) {
+                    endGame();
+                }
+                // Remove block if out of bounds
+                if (top > 500) {
+                    block.remove();
+                    blocks.splice(i, 1);
+                    if (gameRunning) {
+                        score++;
+                        scoreDisplay.textContent = 'Score: ' + score;
+                        // Increase difficulty
+                        if (score % 10 === 0) blockSpeed += 0.5;
+                    }
+                }
             }
         }
-        function resetGame() {
-            secretNumber = Math.floor(Math.random() * 100) + 1;
-            attempts = 0;
-            document.getElementById('score').textContent = 'Attempts: 0';
-            document.getElementById('message').textContent = '';
-            document.getElementById('message').style.color = '#444';
-            document.getElementById('guessInput').value = '';
+
+        function gameLoop() {
+            updateBlocks();
         }
+
+        function startGame() {
+            playerX = 150;
+            player.style.left = playerX + 'px';
+            blocks.forEach(b => b.remove());
+            blocks = [];
+            blockSpeed = 3;
+            score = 0;
+            scoreDisplay.textContent = 'Score: 0';
+            gameRunning = true;
+            gameOverScreen.style.display = 'none';
+            blockInterval = setInterval(createBlock, 900);
+            gameLoopInterval = setInterval(gameLoop, 16);
+        }
+
+        function endGame() {
+            gameRunning = false;
+            clearInterval(blockInterval);
+            clearInterval(gameLoopInterval);
+            gameOverScreen.style.display = 'block';
+            finalScore.textContent = 'Your Score: ' + score;
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        document.addEventListener('keydown', movePlayer);
+        window.onload = startGame;
     </script>
 </body>
 </html>
